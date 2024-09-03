@@ -1,5 +1,5 @@
 import './App.css';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const btnList = [
   //Row 1
@@ -11,13 +11,13 @@ const btnList = [
   { key: "seven", value: "7" },
   { key: "eight", value: "8" },
   { key: "nine", value: "9" },
-  { key: "minus", value: "-" },
+  { key: "subtract", value: "-" },
 
   //Row 3
   { key: "four", value: "4" },
   { key: "five", value: "5" },
   { key: "six", value: "6" },
-  { key: "plus", value: "+" },
+  { key: "add", value: "+" },
 
   //Row 4
   { key: "one", value: "1" },
@@ -31,60 +31,74 @@ const btnList = [
 
 ];
 
-const operatorList = ["/", "+", "-", "x"];
-
 function App() {
 
-  const [displayUpper, setDisplayUpper] = useState("");
-  const [displayLower, setDisplayLower] = useState("0");
+  const [expression, setExpression] = useState("");
+  const [result, setResult] = useState("0");
   const [value, setValue] = useState("");
+
+  const handleOperation = (e) => {
+    expression.includes("=") ?
+      setExpression(result + e.target.value) :
+      setExpression(value + expression.slice(0, -1) + e.target.value);
+    setResult(e.target.value);
+    setValue("");
+  }
 
   const handleClick = (e) => {
     console.log(e.target.value);
 
-    const operatorPresent = () => {
-      return !operatorList.includes(value.charAt(value.length - 1));
-    }
-
-    const insertOperator = (e) => {
-      const operator = e.target.value;
-
-      if (operator === "x") {
-        setDisplayUpper(value + "*");
-      } else {
-        setDisplayUpper(value + operator);
-      }
-      setDisplayLower(operator);
-      setValue("");
-    }
-
-    const evaluate = () => {
-      if (operatorPresent()) {
-        setDisplayUpper(displayUpper + value + "=" + eval(displayUpper + value));
-        setValue("");
-        setDisplayLower("0");
-      }
-    }
-
-    const clear = () => {
-      setDisplayUpper("");
-      setDisplayLower("0");
-      setValue("");
-    }
-
     switch (e.target.value) {
       case "AC":
-        clear();
+        setExpression("");
+        setResult("0");
+        setValue("");
         break;
       case "=":
-        evaluate();
+        try {
+          const calc = `${expression}${value}=`;
+          const answer = eval((`${expression}${value}`).replace('x', '*'));
+          setExpression(`${calc}${answer}`);
+          setResult(answer);
+          setValue("");
+        } catch (err) {
+          console.log(`Error: ${err}`);
+          setResult("Err");
+        }
         break;
-      case "/", "+", "-", "x":
-        insertOperator(e);
+      case "/":
+      case "+":
+      case "x":
+        handleOperation(e);
+        break;
+      case "-":
+        if (value === "" && expression === "") {
+          setValue(`${value}${e.target.value}`);
+          setResult(`${value}${e.target.value}`);
+        } else {
+          handleOperation(e);
+        }
+        break;
+      case ".":
+        if (value === "") {
+          setValue("0.");
+          setResult("0.");
+        } else if (!value.includes(".")) {
+          setValue(`${value}${e.target.value}`);
+          setResult(`${value}${e.target.value}`);
+        }
+        break;
+      case "0":
+        if (value === "") {
+          setResult("0");
+        } else {
+          setValue(`${value}${e.target.value}`);
+          setResult(`${value}${e.target.value}`);
+        }
         break;
       default:
-        setValue(value + e.target.value);
-        setDisplayLower(value + e.target.value);
+        setValue(`${value}${e.target.value}`);
+        setResult(`${value}${e.target.value}`);
         break;
     }
   }
@@ -92,15 +106,15 @@ function App() {
   return (
     <div className="App">
       <div className="calculator">
-        <div className="display">
-          <span className='display-upper'>{displayUpper}</span>
-          <span className='display-lower'>{displayLower}</span>
+        <div className="display-container">
+          <span className='display-upper'>{expression}</span>
+          <span id='display'>{result}</span>
         </div>
         <div className="button-container">
           {btnList.map((btn) => {
             return (
               <button
-                className={btn.key}
+                id={btn.key}
                 key={btn.key}
                 value={btn.value}
                 onClick={(e) => { handleClick(e) }}>
